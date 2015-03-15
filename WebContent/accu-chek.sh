@@ -60,7 +60,6 @@ function transfer {
   else
     echo "File transfer successful, HTTP status $status"
   fi
-  return $status
 }
 
 function mount {
