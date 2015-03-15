@@ -56,9 +56,9 @@ function transfer {
       else
         echo "After retrying, file transfer successful, HTTP status $status"
       fi
-    else
-      echo "File transfer successful, HTTP status $status"
     fi
+  else
+    echo "File transfer successful, HTTP status $status"
   fi
   return $status
 }
