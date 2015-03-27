@@ -63,6 +63,11 @@ function transfer {
 }
 
 function mount {
+  dir="/mnt/accu-chek"
+  if [ ! -d $dir ]; then
+    echo "Creating mount directory $dir"
+    sudo mkdir $dir
+  fi
   sudo mount -L SMART_PIX /mnt/accu-chek 2> /dev/null
 }
 
