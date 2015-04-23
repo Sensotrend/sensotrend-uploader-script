@@ -1,5 +1,22 @@
 #!/bin/bash
 
+
+# Define the led control parameters
+
+# Export the GPIO pins from kernel
+echo 03 > /sys/class/gpio/export
+led1=/sys/class/gpio/gpio3 
+set out > $led1/direction
+
+echo 04 > /sys/class/gpio/export
+led2=/sys/class/gpio/gpio4 
+set out > $led2/direction
+
+echo 21 > /sys/class/gpio/export
+led3=/sys/class/gpio/gpio21 
+set out > $led3/direction
+
+
 ################################## FUNCTIONS ##################################
 
 # Post data with curl.
@@ -9,7 +26,12 @@
 # Expect the path to the file to be posted to be in $file.
 # Number of times to retry can be indicated in $retry.
 function post {
+  echo 1 > $led3/value
   status=$(curl -sw "%{http_code}" -o >(cat >/dev/null) -b cookies -c cookies -F "File=@$file;filename=$file" "https://www.sensotrend.fi/api/upload" --retry $retry)
+  if [ "$status" -ge 300 ]; then
+    # File transfer was not successful! Turn the led 3 off.
+    echo 0 > $led3/value
+  fi
 }
 
 # Authenticate the device.
@@ -17,18 +39,30 @@ function post {
 # Retry 2 times, in case there is an error.
 # Capture the final HTTP status code to $status.
 function authenticate {
+  echo 1 > $led2/value
   status=$(curl -sw "%{http_code}" -o >(cat >/dev/null) -b cookies -c cookies -d "filename=$file" "https://www.sensotrend.fi/api/uploader" --retry 2)
+  if [ "$status" -ge 300 ]; then
+    # Authentication was not successful! Turn the led 2 off.
+    echo 0 > $led2/value
+  fi
 }
 
 # Manage the transfer of a file to the server.
 # File to be transfred should be in $file variable.
 function transfer {
   echo "Transfering $file..."
+  # Assume we are authenticated...
+  if [ "$retry" -eq 1 ]; then
+    echo 1 > $led2/value
+  fi
   post
   if [ "$status" -ge 300 ]; then
     echo "Error sending file, got HTTP status $status"
     if [ "$status" -eq  403 ]; then
-      # Not authentiated. Is this a recursive call?
+      # Not authenticated.
+      echo 0 > $led2/value
+  
+      #Is this a recursive call?
       if [ "$retry" -eq 1 ]; then
         # First time we're here, let's authenticate
         authenticate
@@ -88,8 +122,19 @@ if [ -d /mnt/accu-chek/REPORT/XML/ ]; then
     files=$(ls /mnt/accu-chek/REPORT/XML/*.XML 2> /dev/null)
     if [ $? -ne 0 ]; then
       echo "Waiting for XML file..."
-      # Wait for 10 seconds...
-      sleep 10
+      # Wait for the file to become available
+	  
+	  # Blink the first led, 3 times 3 blinks
+      for ((j=0; j<3; j++)) do
+        for ((k=0; k<3; k++)) do
+          echo 1 > $led1/value
+          sleep 1
+          echo 0 > $led1/value
+          sleep 1
+        done
+        sleep 1
+	  done
+
       # This also helps to refresh the directory when already mounted
 	  # (the file system does not necessarily do that for USB storage devices)
 	  mount
