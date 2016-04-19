@@ -4,19 +4,25 @@
 # Define the led control parameters
 
 # Export the GPIO pins from kernel
-echo 03 > /sys/class/gpio/export
-led1=/sys/class/gpio/gpio3 
-set out > $led1/direction
+led1=/sys/class/gpio/gpio3
+if [ ! -d $led1 ] ; then
+  echo 03 > /sys/class/gpio/export
+fi
+echo out > $led1/direction
 
-echo 04 > /sys/class/gpio/export
 led2=/sys/class/gpio/gpio4 
-set out > $led2/direction
+if [ ! -d $led2 ] ; then
+  echo 04 > /sys/class/gpio/export
+fi
+echo out > $led2/direction
 
-echo 21 > /sys/class/gpio/export
 led3=/sys/class/gpio/gpio21 
-set out > $led3/direction
+if [ ! -d $led3 ] ; then
+  echo 21 > /sys/class/gpio/export
+fi
+echo out > $led3/direction
 
-
+	
 ################################## FUNCTIONS ##################################
 
 # Post data with curl.
@@ -139,6 +145,8 @@ if [ -d /mnt/accu-chek/REPORT/XML/ ]; then
 	  # (the file system does not necessarily do that for USB storage devices)
 	  mount
     else
+      # File found, turn the led on!
+      echo 1 > $led1/value
 	  # There might be several XML files present, let's transfer all of them
       for file in $files; do
         # Allow 1 retry for authentication, signal this in $retry
